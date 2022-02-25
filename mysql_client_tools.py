@@ -10,9 +10,8 @@ from config import mysql_config
 class MysqlClient(object):
     __pool = None
 
-    def __init__(self):
+    def __init__(self, mysql_config):
         """
-
         :param mincached:连接池中空闲连接的初始数量
         :param maxcached:连接池中空闲连接的最大数量
         :param maxshared:共享连接的最大数量
@@ -34,7 +33,7 @@ class MysqlClient(object):
         host = mysql_config.get("HOST")
         port = mysql_config.get("PORT")
         database = mysql_config.get("DATABASE")
-        user =mysql_config.get("USERNAME")
+        user = mysql_config.get("USERNAME")
         password = mysql_config.get("PASSWORD")
         charset = 'utf8mb4'
 
@@ -69,6 +68,14 @@ class MysqlClient(object):
         count = self._cursor.execute(sql, param)
         return count
 
+    def __commit(self):
+        '''提交'''
+        try:
+            self._conn.commit()
+        except Exception as e:
+            self._conn.rollback()
+            raise e
+
     @staticmethod
     def __dict_datetime_obj_to_str(result_dict):
         """把字典里面的datetime对象转成字符串，使json转换不出错"""
@@ -79,7 +86,7 @@ class MysqlClient(object):
 
     def select_one(self, sql, param=()):
         """查询单个结果"""
-        count = self.__execute(sql, param)
+        self.__execute(sql, param)
         result = self._cursor.fetchone()
         if not result:
             return dict()
@@ -94,11 +101,11 @@ class MysqlClient(object):
         :param param: sql参数
         :return: 结果数量和查询结果集
         """
-        count = self.__execute(sql, param)
+        self.__execute(sql, param)
         result = self._cursor.fetchall()
         """:type result:list"""
         [self.__dict_datetime_obj_to_str(row_dict) for row_dict in result]
-        return count, result
+        return result
 
     def execute_count(self, sql, param=()):
         '''返回结果的数量'''
@@ -107,32 +114,36 @@ class MysqlClient(object):
 
     def insert(self, sql, param=()):
         """插入行"""
-        result= self.__execute(sql, param)
-        self.commit_data()
+        result = self.__execute(sql, param)
+        self.__commit()
+        return result
+
+    def insert_dict(self, table, data):
+        """通过 dict 插入数据"""
+        # 获取到一个以键且为逗号分隔的字符串，返回一个字符串
+        keys = ','.join(data.keys())
+        param = list(data.values())
+        s_len = ','.join(['%s'] * len(data))
+        sql = f'''insert into {table}(%s) values(%s)'''
+        insert_sql = sql % (keys, s_len)
+        result = self.__execute(insert_sql, param)
+        self.__commit()
         return result
 
     def update(self, sql, param=()):
         '''更新'''
-        result= self.__execute(sql, param)
-        self.commit_data()
+        result = self.__execute(sql, param)
+        self.__commit()
         return result
 
     def batch_update(self, sql, param=()):
         '''批量更新'''
-        result= self._cursor.executemany(sql, param)
-        self.commit_data()
+        result = self._cursor.executemany(sql, param)
+        self.__commit()
         return result
 
     def delete(self, sql, param=()):
         '''删除'''
-        result= self.__execute(sql, param)
-        self.commit_data()
+        result = self.__execute(sql, param)
+        self.__commit()
         return result
-
-    def commit_data(self):
-        '''提交'''
-        try:
-            self._conn.commit()
-        except Exception as e:
-            self._conn.rollback()
-            raise e
