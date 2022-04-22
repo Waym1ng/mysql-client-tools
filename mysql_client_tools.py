@@ -50,7 +50,7 @@ class MysqlClient(object):
         self.__get_conn()
 
     def __del__(self):
-        if self._conn and self._cursor:
+        if self._conn:
             self.__close()
 
     def __get_conn(self):
@@ -59,7 +59,6 @@ class MysqlClient(object):
 
     def __close(self):
         try:
-            self._cursor.close()
             self._conn.close()
         except Exception as e:
             raise e
