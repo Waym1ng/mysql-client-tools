@@ -25,6 +25,7 @@ class MySQLConnector:
     def execute(self, sql, params=None):
         conn = self.pool.connection()
         cursor = conn.cursor()
+        self.cursor = cursor
 
         try:
             if params is None:
@@ -46,6 +47,7 @@ class MySQLConnector:
     def executemany(self, sql, params):
         conn = self.pool.connection()
         cursor = conn.cursor()
+        self.cursor = cursor
 
         try:
             cursor.executemany(sql, params)
@@ -62,7 +64,7 @@ class MySQLConnector:
         converted_result = []
         for row in result:
             converted_row = {}
-            for i, col in enumerate(cursor.description):
+            for i, col in enumerate(self.cursor.description):
                 value = row[i]
                 if isinstance(value, datetime):
                     value = value.strftime('%Y-%m-%d %H:%M:%S')
