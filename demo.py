@@ -1,37 +1,43 @@
 # -*- coding: utf-8 -*-
-from mysql_client_tools import MysqlClient
+import random
+from datetime import datetime
+from mysql_client_tools import MySQLConnector
 
+# 初始化连接
+connector = MySQLConnector(
+    host='localhost',
+    port=3306,
+    user='root',
+    password='password',
+    database='test'
+)
 
-if __name__ == "__main__":
-    mc = MysqlClient()
+# 插入单行数据
+data = {'name': 'Alice', 'age': 20, 'created_at': datetime.now()}
+connector.insert('users', data)
 
-    sql = 'SELECT * FROM users WHERE id=2'
-    result = mc.select_one(sql)
-    print(result)
-    '''{'id': 2, 'email': '888@qq.com', 'status': 1}'''
+# 插入多行数据
+data_list = [{'name': 'Bob', 'age': 25, 'created_at': datetime.now()},
+             {'name': 'Charlie', 'age': 30, 'created_at': datetime.now()}]
+connector.insert_many('users', data_list)
 
-    sql = 'SELECT * FROM users'
-    result = mc.select_many(sql)
-    print('更新前：', result)
-    '''更新前： (4, [{'id': 2, 'email': '888@qq.com', 'status': 1}, {'id': 3, 'email': '777@qq.com', 'status': 1}, {'id': 4, 'email': '666@qq.com', 'status': 1}, {'id': 5, 'email': '555@qq.com', 'status': 1}])'''
+# 查询数据
+result = connector.execute("SELECT * FROM users")
+print(result)
 
-    # 批量更新时传入列表
-    batch_update_sql = 'UPDATE users SET status=0 WHERE id=(%s)'
-    result = mc.batch_update(batch_update_sql, ([2, 3, 4]))
-    print('更新成功的条数：', result)
-    '''更新成功的条数： 3'''
+# 查询单条数据
+result = connector.execute("SELECT * FROM users WHERE name = %s", ('Alice',))
+print(result)
 
-    sql = 'SELECT * FROM users'
-    result = mc.select_many(sql)
-    print('更新后：', result)
-    '''更新后： (4, [{'id': 2, 'email': '888@qq.com', 'status': 0}, {'id': 3, 'email': '777@qq.com', 'status': 0}, {'id': 4, 'email': '666@qq.com', 'status': 0}, {'id': 5, 'email': '555@qq.com', 'status': 1}])'''
-    # sql = 'INSERT INTO users (email, status) VALUES (%s, %s)'
-    # result = mc.insert(sql, ("444@qq.com", 1))
-    # print('添加成功的条数：', result)
-    # '''添加成功的条数： 1'''
+# 查询多条数据
+result = connector.execute("SELECT * FROM users WHERE age > %s", (25,))
+print(result)
 
-    # 测试日期
-    sql = 'SELECT * FROM items'
-    result = mc.select_many(sql)
-    print('测试日期：', result)
-    '''测试日期： (1, [{'id': 1, 'title': '12345', 'create_time': '2021-07-28 14:39:08'}])'''
+# 更新数据
+data = {'age': random.randint(20, 40)}
+where_clause = "name = %s"
+connector.update('users', data, where_clause)
+
+# 删除数据
+where_clause = "age < %s"
+connector.delete('users', where_clause)
