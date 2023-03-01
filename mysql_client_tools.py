@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import pymysql
-import datetime
-from DBUtils.PooledDB import PooledDB
-from config import mysql_config
+from datetime import datetime
+from pymysql import OperationalError
+from dbutils.pooled_db import PooledDB
 
 class MySQLConnector:
     def __init__(self, host, port, user, password, database, charset='utf8mb4', max_connections=5):
