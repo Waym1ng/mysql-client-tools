@@ -33,7 +33,7 @@ class MySQLClient:
 
     def execute(self, sql, params=None):
         """
-        执行，返回的是 list，可单条也可多条
+        执行，返回的为 list，可单条也可多条
         """
         conn = self.pool.connection()
         cursor = conn.cursor()
@@ -73,7 +73,7 @@ class MySQLClient:
 
     def query_one(self, sql, params=None):
         """
-        返回的单条数据为dict
+        查询单条数据，返回的为dict
         """
         conn = self.pool.connection()
         cursor = conn.cursor()
@@ -94,6 +94,9 @@ class MySQLClient:
             conn.close()
 
     def insert(self, table, data):
+        """
+        插入单条数据
+        """
         columns = ", ".join(data.keys())
         values_template = ", ".join(["%s"] * len(data))
         sql = f"INSERT INTO {table} ({columns}) VALUES ({values_template})"
@@ -101,6 +104,9 @@ class MySQLClient:
         self.executemany(sql, [params])
 
     def insert_many(self, table, data_list):
+        """
+        批量插入数据
+        """
         columns = ", ".join(data_list[0].keys())
         values_template = ", ".join(["%s"] * len(data_list[0]))
         sql = f"INSERT INTO {table} ({columns}) VALUES ({values_template})"
@@ -108,11 +114,17 @@ class MySQLClient:
         self.executemany(sql, params_list)
 
     def update(self, table, data, where_clause):
+        """
+        更新数据
+        """
         set_clause = ", ".join([f"{key}=%s" for key in data.keys()])
         sql = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
         params = tuple(data.values())
         self.executemany(sql, [params])
 
     def delete(self, table, where_clause):
+        """
+        删除数据
+        """
         sql = f"DELETE FROM {table} WHERE {where_clause}"
         self.execute(sql)
