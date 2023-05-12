@@ -4,7 +4,7 @@ from datetime import datetime
 from pymysql import OperationalError
 from dbutils.pooled_db import PooledDB
 
-class MySQLConnector:
+class MySQLClient:
     def __init__(self, host, port, user, password, database, charset='utf8mb4', max_connections=5):
         try:
             self.pool = PooledDB(
@@ -16,13 +16,25 @@ class MySQLConnector:
                 database=database,
                 charset=charset,
                 autocommit=False,
-                maxconnections=max_connections
+                maxconnections=max_connections,
+                cursorclass=pymysql.cursors.DictCursor
             )
         except OperationalError as e:
             print(f"Cannot connect to database: {e}")
             exit(1)
 
+    @staticmethod
+    def __dict_datetime_obj_to_str(result_dict):
+        """把字典里面的datetime对象转成字符串"""
+        if result_dict:
+            result_replace = {k: v.__str__() for k, v in result_dict.items() if isinstance(v, datetime)}
+            result_dict.update(result_replace)
+        return result_dict
+
     def execute(self, sql, params=None):
+        """
+        执行，返回的是 list，可单条也可多条
+        """
         conn = self.pool.connection()
         cursor = conn.cursor()
         self.cursor = cursor
@@ -32,19 +44,18 @@ class MySQLConnector:
                 cursor.execute(sql)
             else:
                 cursor.execute(sql, params)
-            result = cursor.fetchall()
-            if result:
-                return self.convert_to_dict(result)
-            else:
-                return []
+            return [self.__dict_datetime_obj_to_str(row_dict) for row_dict in cursor.fetchall()]
         except Exception as e:
-            print(f"Cannot execute query: {e}")
+            print(f"Cannot execute query all: {e}")
             return None
         finally:
             cursor.close()
             conn.close()
 
     def executemany(self, sql, params):
+        """
+        插入和更新时使用
+        """
         conn = self.pool.connection()
         cursor = conn.cursor()
         self.cursor = cursor
@@ -60,17 +71,27 @@ class MySQLConnector:
             cursor.close()
             conn.close()
 
-    def convert_to_dict(self, result):
-        converted_result = []
-        for row in result:
-            converted_row = {}
-            for i, col in enumerate(self.cursor.description):
-                value = row[i]
-                if isinstance(value, datetime):
-                    value = value.strftime('%Y-%m-%d %H:%M:%S')
-                converted_row[col[0]] = value
-            converted_result.append(converted_row)
-        return converted_result
+    def query_one(self, sql, params=None):
+        """
+        返回的单条数据为dict
+        """
+        conn = self.pool.connection()
+        cursor = conn.cursor()
+        self.cursor = cursor
+
+        try:
+            if params is None:
+                cursor.execute(sql)
+            else:
+                cursor.execute(sql, params)
+            result = cursor.fetchone()
+            return self.__dict_datetime_obj_to_str(result)
+        except Exception as e:
+            print(f"Cannot execute query one: {e}")
+            return None
+        finally:
+            cursor.close()
+            conn.close()
 
     def insert(self, table, data):
         columns = ", ".join(data.keys())
