@@ -26,7 +26,7 @@ result = connector.execute("SELECT * FROM users")
 print(result)
 
 # 查询单条数据
-result = connector.execute("SELECT * FROM users WHERE name = %s", ('Alice',))
+result = connector.query_one("SELECT * FROM users WHERE name = %s", ('Alice',))
 print(result)
 
 # 查询多条数据
