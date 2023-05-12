@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import random
 from datetime import datetime
-from mysql_client_tools import MySQLConnector
+from mysql_client_tools import MySQLClient
 
 # 初始化连接
-connector = MySQLConnector(
+connector = MySQLClient(
     host='localhost',
     port=3306,
     user='root',
